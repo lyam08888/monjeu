@@ -1,21 +1,1236 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8" />
-  <title>Attrape la pièce !</title>
-  <style>
-    body { background: #111; display: flex; flex-direction: column; align-items: center; color: #fff;}
-    canvas { background: #222; border: 2px solid #fff; margin-top: 24px; }
-    #startMenu { margin-top: 20px; }
-    #startButton { font-size: 18px; padding: 10px 20px; }
-  </style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<title>Undercover 3.0 - Révolution</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+<meta name="theme-color" content="#0D1117">
+<style>
+  :root{
+    --bg: #0D1117;
+    --surface: #161B22;
+    --surface-light: #2c333d;
+    --border: #30363d;
+    --ink: #e6edf3;
+    --muted: #8b949e;
+    --accent: #38BDF8;
+    --accent-glow: rgba(56, 189, 248, 0.3);
+    --danger: #F472B6;
+    --warn: #FBBF24;
+    --success: #34D399;
+    --r: 12px;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color: transparent;}
+  html,body{height:100%; overflow: hidden;}
+  body{
+    margin:0; font-family: 'Inter', sans-serif;
+    color:var(--ink);
+    background-color: var(--bg);
+    background-image: radial-gradient(circle at 10% 10%, var(--accent-glow), transparent 40%), radial-gradient(circle at 90% 90%, rgba(244, 114, 182, 0.1), transparent 40%);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    display: grid;
+    place-items: center;
+  }
+  .app{
+    width: 100%;
+    max-width:480px;
+    height: 100%;
+    max-height: 900px;
+    display:flex;
+    flex-direction:column; 
+    position: relative; 
+    background: var(--bg);
+    border-left: 1px solid var(--border);
+    border-right: 1px solid var(--border);
+    overflow: hidden;
+    box-shadow: 0 0 60px rgba(0,0,0,0.4);
+  }
+  header{position:sticky;top:0;z-index:10;background: rgba(13, 17, 23, 0.7);
+    backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+    border-bottom:1px solid var(--border); display: none;}
+  .bar{display:flex;align-items:center;gap:.75rem;padding:.75rem 1rem; height: 60px;}
+  .title{font-weight:800; font-size:1.1rem;}
+  .spacer{flex:1}
+  .icon-btn{background: transparent; border:none; color:var(--muted); padding:.5rem; border-radius:50%; display:inline-flex;align-items:center; cursor:pointer; transition: all .2s ease;}
+  .icon-btn:hover, .icon-btn:focus { color:var(--ink); background: var(--surface); }
+  main{flex:1; display:flex;flex-direction:column; overflow: hidden; height: 100%; position: relative;}
+  .screen{position:absolute; top:0; left:0; width:100%; height:100%; display:flex; flex-direction:column; padding:1rem; overflow-y:auto;
+    opacity:0; visibility:hidden; transition: opacity .3s ease, transform .3s ease; transform: scale(0.98); animation-fill-mode: both;}
+  .screen.active{opacity:1; visibility:visible; transform: scale(1);}
+  .screen.slide-out { animation: slideOut .3s ease-out; }
+  .screen.slide-in { animation: slideIn .3s ease-in; }
+  .card{background:var(--surface); border-radius:var(--r); padding:1.2rem; border: 1px solid var(--border); animation: fadeInUp .4s .1s both;}
+  h1{font-size:1.5rem;margin:0 0 1rem 0; font-weight: 800; color: var(--accent); display: flex; align-items: center; gap: 0.5rem;}
+  h2{font-size:1.1rem;margin:1.5rem 0 .75rem 0;color:var(--muted); font-weight: 700;}
+  .row{display:flex;gap:.75rem;align-items:center;flex-wrap:wrap}
+  input[type="text"], select{width:100%; padding:.75rem 1rem; font-size:1rem; color:var(--ink); background:var(--bg); border:1px solid var(--border); border-radius:8px; outline:none; transition: all .2s ease;}
+  input[type="text"]:focus, select:focus {border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-glow);}
+  .pill{display:flex; align-items:center; justify-content:space-between; gap:.75rem; padding:.75rem 1rem; border-radius:8px; border:1px solid var(--border); background:var(--bg);}
+  .numstep{display:flex;align-items:center;gap:.55rem}
+  .step-btn{width:40px;height:40px;border-radius:8px;border:1px solid var(--border); background:var(--surface-light); color:var(--ink); font-size:1.25rem; font-weight:600; cursor:pointer; transition: all .2s ease;}
+  .step-btn:hover { border-color: var(--accent); }
+  .counter{min-width:40px;text-align:center;font-weight:700;font-size:1.25rem}
+  .btn{width:100%; padding:1rem 1.1rem; border-radius:8px; font-weight:700; border:none; color:var(--bg); background:var(--accent); font-size:1rem; cursor:pointer; transition: all .2s ease; -webkit-tap-highlight-color: transparent;}
+  .btn:hover { filter: brightness(1.1); }
+  .btn:active { transform: scale(0.98); }
+  .btn.ghost{background:var(--surface-light); color:var(--ink); border:1px solid var(--border);}
+  .btn.ghost:hover{border-color:var(--muted);}
+  .btn.danger{background:var(--danger); color: #fff;}
+  .players{display:flex;flex-direction:column; gap:.6rem}
+  .player-row{display:flex; align-items:center; gap:.7rem; padding:.5rem; border-radius:8px; background: var(--surface-light);}
+  .avatar{width:48px;height:48px;border-radius:8px;display:grid;place-items:center;font-weight:700; background:var(--bg); color:var(--muted); overflow:hidden; position:relative; flex-shrink: 0;}
+  .avatar img{width:100%;height:100%;object-fit:cover;display:block}
+  .center{display:grid;place-items:center; flex: 1; text-align: center;}
+  .hint{font-size:.9rem;color:var(--muted); line-height: 1.5; max-width: 40ch; margin: 0 auto;}
+  dialog{ border:none; border-radius:var(--r); background: var(--surface); color:var(--ink); padding:0; box-shadow:0 25px 50px -12px rgba(0,0,0,0.5); width:min(92vw,420px); border: 1px solid var(--border);}
+  dialog::backdrop{background:rgba(0,0,0,.6); backdrop-filter: blur(5px); -webkit-backdrop-filter: blur(5px);}
+  dialog[open]{animation: zoomIn .2s ease-out;}
+  @keyframes zoomIn {from{opacity:0; transform:scale(.95)}}
+  .modal{padding:1.5rem}
+  .modal h2 {margin:0 0 .5rem 0; font-weight: 700; font-size: 1.25rem; color: var(--accent);}
+  .modal p {margin:.5rem 0 1.5rem 0; color: var(--muted); line-height: 1.6;}
+  .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border-width: 0; }
+
+  /* Action Bar */
+  .action-bar{ position: fixed; bottom: 0; left: 0; right: 0; z-index: 10; padding: .75rem; background: linear-gradient(180deg, transparent, var(--bg) 80%); display: none; max-width: 480px; margin: 0 auto; animation: slideUp .3s ease-out; }
+  .action-bar.visible { display: flex; gap: .75rem; }
+  @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+
+  /* Pass Screen */
+  .pass-container { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1.5rem; flex: 1; user-select: none;}
+  .reveal-card-wrapper { perspective: 1500px; }
+  .reveal-card {
+    width: 300px; height: 420px; border-radius: var(--r);
+    background: linear-gradient(165deg, var(--surface), #21262d);
+    cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center;
+    padding: 1.5rem; text-align: center;
+    transition: transform 0.6s cubic-bezier(0.22, 1, 0.36, 1), box-shadow .3s ease, opacity .3s ease-in-out;
+    border: 1px solid var(--border);
+    box-shadow: 0 0 2px rgba(0,0,0,0.2), 0 4px 12px rgba(0,0,0,0.3);
+    position: relative;
+    transform-style: preserve-3d;
+  }
+  .reveal-card .icon { font-size: 3rem; margin-bottom: 1rem; color: var(--accent); transition: transform .3s ease; }
+  .reveal-card .text { font-weight: 600; font-size: 1rem; }
+  .reveal-card.flipped { transform: rotateY(180deg); }
+  .card-face { position: absolute; top:0; left:0; width:100%; height:100%; -webkit-backface-visibility: hidden; backface-visibility: hidden; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 1.5rem; }
+  .card-back { transform: rotateY(180deg); }
+  .word-big { font-size: 2rem; font-weight: 800; color: var(--accent); }
+  
+  /* Game Screen */
+  .game-container { width: 100%; height: 100%; display: flex; flex-direction: column; }
+  .turn-display { display: flex; flex-direction: column; align-items: center; gap: 1rem; padding: 1.5rem; background: var(--surface); border-radius: var(--r); margin-bottom: 1rem; animation: slideDown .5s both; }
+  .turn-player-avatar { width: 80px; height: 80px; border-radius: 50%; position: relative; }
+  .turn-player-avatar .avatar { width: 100%; height: 100%; border-radius: 50%; }
+  .turn-timer-ring { position: absolute; top: -5px; left: -5px; width: 90px; height: 90px; }
+  .turn-timer-circle { stroke: var(--accent); stroke-width: 4; fill: transparent; transition: stroke-dashoffset 0.2s linear, stroke 0.3s; transform: rotate(-90deg); transform-origin: 50% 50%; }
+  .turn-player-name { font-size: 1.25rem; font-weight: 700; }
+  .game-content-area { flex: 1; display: grid; place-items: center; text-align: center; padding: 1rem; }
+  .hint-text { font-size: 2.5rem; font-weight: 800; animation: fadeIn .5s ease; }
+  .vote-timer-display { text-align: center; font-size: 3rem; font-weight: 800; color: var(--accent); animation: pulse 1s infinite; }
+  .player-grid-vote { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 1rem; padding: 1rem 0; width: 100%;}
+  .player-vote-card { display: flex; flex-direction: column; align-items: center; gap: .5rem; padding: 1rem; background: var(--surface); border-radius: var(--r); border: 2px solid transparent; cursor: pointer; transition: all .2s ease; }
+  .player-vote-card:not(.disabled):hover { transform: translateY(-4px); border-color: var(--muted); }
+  .player-vote-card.voted { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-glow); transform: scale(1.05); }
+  .player-vote-card .avatar { width: 64px; height: 64px; border-radius: 50%; }
+  .player-vote-card .name { font-weight: 600; font-size: 0.9rem; }
+  .player-vote-card.disabled { opacity: 0.6; cursor: not-allowed; }
+
+  /* Setup Options */
+  .option-card {
+    display: flex; flex-direction: column; align-items: center; gap: .5rem;
+    padding: 1rem .5rem; background: var(--bg); border: 1px solid var(--border);
+    border-radius: 8px; cursor: pointer; transition: all .2s ease; text-align: center;
+  }
+  .option-card.active { background: var(--surface-light); border-color: var(--accent); }
+  .option-card .icon { font-size: 1.5rem; }
+  .option-card .label { font-size: .9rem; font-weight: 600; }
+  .option-card .value { font-size: .8rem; color: var(--muted); }
+
+  /* Home Screen */
+  .home-title { font-size: 3rem; font-weight: 800; text-align: center; letter-spacing: -1px; }
+  .home-title .accent { color: var(--accent); text-shadow: 0 0 15px var(--accent-glow); }
+
+  /* Vote Reveal */
+  .vote-reveal-grid { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 1rem; margin-top: 1rem; padding: 0.5rem 0; border-bottom: 1px solid var(--border); }
+  .vote-reveal-grid:last-child { border-bottom: none; }
+  .vote-reveal-item { display: flex; flex-direction: column; align-items: center; gap: 0.5rem; text-align: center; }
+  .vote-reveal-item .avatar { width: 56px; height: 56px; border-radius: 50%; }
+  .vote-reveal-item .name { font-size: 0.9rem; font-weight: 600; }
+  .vote-arrow { font-size: 2rem; color: var(--muted); }
+  .vote-arrow.suspect { color: var(--danger); font-weight: bold; }
+  
+  /* Event Screen */
+  #screen-event .center { gap: 1.5rem; }
+  #event-icon { font-size: 4rem; animation: zoomIn .5s both; }
+  #event-title { font-size: 2rem; animation: fadeInUp .5s .2s both; }
+  #event-description { max-width: 45ch; animation: fadeInUp .5s .4s both; }
+  
+  /* Animations */
+  @keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes slideDown { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
+  @keyframes slideOut { to { opacity: 0; transform: translateX(-100%); } }
+  @keyframes slideIn { from { opacity: 0; transform: translateX(100%); } }
+  .reveal-avatar { animation: zoomIn .5s .1s both; }
+  .reveal-title { animation: fadeInUp .5s .3s both; }
+  .reveal-card-info { animation: fadeInUp .5s .5s both; }
+  .winner-banner { animation: zoomIn .5s cubic-bezier(0.25, 2.5, 0.5, 1) both; }
+
+</style>
 </head>
 <body>
-  <h1>Attrape la pièce !</h1>
-  <div id="startMenu">
-    <button id="startButton">Démarrer</button>
-  </div>
-  <canvas id="gameCanvas" width="400" height="400" style="display:none;"></canvas>
-  <script src="game.js"></script>
+<div class="app">
+  <header id="game-header">
+    <div class="bar">
+      <div class="title">Undercover 3.0</div>
+      <div class="spacer"></div>
+      <button id="btnShowMyCard" class="icon-btn" title="Voir ma carte" style="display: none;"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg></button>
+      <button id="btnNewWord" class="icon-btn" title="Nouveau mot" style="display: none;"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg></button>
+      <button id="btnReset" class="icon-btn" title="Nouvelle partie"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg></button>
+      <button id="btnHelp" class="icon-btn" title="Règles"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></svg></button>
+    </div>
+  </header>
+
+  <main>
+    <!-- HOME -->
+    <section id="screen-home" class="screen active">
+        <div class="center">
+            <h1 class="home-title" style="animation: fadeInUp .5s both;">Undercover<span class="accent"> 3.0</span></h1>
+            <p class="hint" style="animation: fadeInUp .5s .1s both;">La Révolution</p>
+            <button id="start-game-btn" class="btn" style="width: auto; padding: 1rem 2rem; margin-top: 2rem; animation: fadeInUp .5s .2s both;">Commencer à jouer</button>
+        </div>
+    </section>
+
+    <!-- SETUP -->
+    <section id="screen-setup" class="screen">
+        <!-- Step 1: Mission -->
+        <div class="setup-step" data-step="1">
+            <div class="card">
+                <h1><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>Nouvelle Mission</h1>
+                <div class="row"><div class="pill" style="flex:1;"><span>Thème</span><select id="themeSelect">
+                    <option value="random">🎲 Aléatoire</option>
+                    <option value="quotidien" selected>Mots du quotidien</option>
+                    <option value="jeuxvideo">Jeux Vidéo</option>
+                    <option value="animaux">Animaux</option>
+                    <option value="metiers">Métiers</option>
+                    <option value="marques">Marques Célèbres</option>
+                    <option value="insolites">Objets Insolites</option>
+                    <option value="cuisine">Cuisine</option>
+                    <option value="cinema">Cinéma & TV</option>
+                    <option value="geo">Géographie</option>
+                    <option value="culture">Culture & Histoire</option>
+                    <option value="pop">Culture Pop</option>
+                    <option value="sports">Sports</option>
+                    <option value="musique">Musique</option>
+                    <option value="algerie">Culture Algérienne</option>
+                    <option value="drole">Mots Piégés</option>
+                </select></div></div>
+                <div class="row" style="margin-top:.6rem"><div class="pill" style="flex:1.5"><span><b>Agents</b> (3–12)</span><div class="numstep"><button id="minus" class="step-btn">−</button><div id="playerNum" class="counter">4</div><button id="plus" class="step-btn">+</button></div></div><div class="pill" style="flex:1"><span>Bots IA</span><div class="numstep"><button id="minusBot" class="step-btn">−</button><div id="botNum" class="counter">0</div><button id="plusBot" class="step-btn">+</button></div></div></div>
+            </div>
+        </div>
+        <!-- Step 2: Options -->
+        <div class="setup-step" data-step="2">
+            <div class="card">
+                <h1 style="font-size: 1.25rem;"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 0 2l-.15.08a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.38a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1 0-2l.15-.08a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>Options de la partie</h1>
+                <div class="setup-options" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: .75rem;">
+                    <div id="option-events" class="option-card active"><div class="icon">🎲</div><div class="label">Événements</div><div class="value">Activé</div></div>
+                    <div id="option-sound" class="option-card"><div class="icon">🔊</div><div class="label">Sons</div><div class="value">Désactivé</div></div>
+                    <div id="option-innocent" class="option-card"><div class="icon">😇</div><div class="label">Innocent</div><div class="value">Désactivé</div></div>
+                </div>
+            </div>
+        </div>
+        <!-- Step 3: Players -->
+        <div class="setup-step" data-step="3">
+            <div class="card">
+                <h1 style="font-size: 1.25rem;"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>Agents Humains</h1>
+                <div id="playersSetup" class="players"></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- PASS & CARD REVEAL -->
+    <section id="screen-pass" class="screen">
+        <div class="pass-container">
+            <div style="text-align:center;"><h1>Passez à <b id="currentName"></b></h1><p class="hint">Touchez la carte pour révéler votre rôle secret. <br>Cachez-la avant de passer au suivant.</p></div>
+            <div class="reveal-card-wrapper"><div id="revealCard" class="reveal-card"><div class="card-face card-front"><div class="icon">?</div><div class="text">TOUCHER POUR RÉVÉLER</div></div><div class="card-face card-back"><div id="secretWord" class="word-big"></div></div></div></div>
+        </div>
+    </section>
+
+    <!-- GAME ROUND -->
+    <section id="screen-game" class="screen">
+        <div class="game-container">
+            <div id="turn-display" class="turn-display"></div>
+            <div id="game-content-area" class="game-content-area"></div>
+        </div>
+    </section>
+    
+    <!-- EVENT -->
+    <section id="screen-event" class="screen">
+        <div class="center">
+            <div id="event-icon"></div>
+            <h1 id="event-title"></h1>
+            <p id="event-description" class="hint"></p>
+        </div>
+    </section>
+
+    <!-- REVEAL / RESULT -->
+    <section id="screen-reveal" class="screen">
+      <div class="center" style="gap:.8rem;"><div id="revealPhoto" class="avatar reveal-avatar" style="width:120px;height:120px;border-radius:50%;"></div><h1 id="revealTitle" class="reveal-title" style="margin-top: 1rem;"></h1><div class="card reveal-card-info" style="max-width:400px; width: 100%;"><div id="roleBadge" style="font-weight: 600; color: var(--muted); margin-bottom: .5rem;">Rôle</div><div id="revealedWord" style="font-size: 1.2rem; font-weight: 700;"></div></div></div>
+    </section>
+    
+    <!-- LAST WORD -->
+    <section id="screen-lastword" class="screen">
+        <div class="center" style="gap: 1rem;">
+            <h1>Dernier Mot</h1>
+            <p class="hint" id="lastword-prompt"></p>
+            <div id="lastword-grid" class="player-grid-vote"></div>
+        </div>
+    </section>
+
+    <!-- END -->
+    <section id="screen-end" class="screen">
+      <div class="center" style="gap:.8rem;"><h1 id="winnerBanner" class="winner-banner" style="font-size: 2.5rem;"></h1><p id="summary" class="hint" style="max-width: 400px; animation: fadeInUp .5s .2s both;"></p>
+      <div id="vote-reveal-container" class="card" style="width: 100%; max-width: 400px; display:none; animation: fadeInUp .5s .4s both;">
+        <h2>Qui a voté contre qui ?</h2>
+        <div id="vote-reveal-details"></div>
+      </div>
+      </div>
+    </section>
+  </main>
+
+  <div id="actionBar" class="action-bar"></div>
+</div>
+
+<!-- Modals -->
+<dialog id="modal-template">
+    <div class="modal"><h2 id="modal-title"></h2><p id="modal-message"></p><div id="modal-input-wrap" style="display:none;"><input type="text" id="modal-input" style="width: 100%;"></div><div id="modal-actions" class="row" style="margin-top:1.5rem"></div></div>
+</dialog>
+
+<script>
+(function(){
+  // ---------- WORD DATA V3 ----------
+  const PAIRS_QUOTIDIEN=[{a:"chaussette",b:"collant"},{a:"pull",b:"gilet"},{a:"café",b:"thé"},{a:"fourchette",b:"cuillère"},{a:"fenêtre",b:"porte"}];
+  const PAIRS_CUISINE=[{a:"baguette",b:"croissant"},{a:"camembert",b:"roquefort"},{a:"raclette",b:"tartiflette"},{a:"sel",b:"poivre"}];
+  const PAIRS_CINEMA=[{a:"Les Visiteurs",b:"Astérix"},{a:"OSS 117",b:"Kaamelott"},{a:"Marvel",b:"DC Comics"}];
+  const PAIRS_GEO=[{a:"Paris",b:"Lyon"},{a:"Alpes",b:"Pyrénées"},{a:"France",b:"Italie"}];
+  const PAIRS_CULTURE=[{a:"Tour Eiffel",b:"Arc de Triomphe"},{a:"Louvre",b:"Orsay"},{a:"Molière",b:"Victor Hugo"}];
+  const PAIRS_POP=[{a:"Pokémon",b:"Digimon"},{a:"Twitch",b:"YouTube"},{a:"Harry Potter",b:"Seigneur des Anneaux"}];
+  const PAIRS_SPORTS=[{a:"Football",b:"Rugby"},{a:"Tennis",b:"Badminton"},{a:"Judo",b:"Boxe"}];
+  const PAIRS_MUSIQUE=[{a:"Guitare",b:"Piano"},{a:"Daft Punk",b:"Justice"},{a:"Rock",b:"Rap"}];
+  const PAIRS_ALGERIE=[{a:"Chorba",b:"Hrira"},{a:"Couscous",b:"Berkoukes"},{a:"Zlabia",b:"Makrout"}];
+  const PAIRS_ANIMAUX=[{a:"chat",b:"chien"},{a:"lion",b:"tigre"},{a:"poule",b:"canard"}];
+  const PAIRS_METIERS=[{a:"boulanger",b:"pâtissier"},{a:"médecin",b:"pompier"},{a:"professeur",b:"policier"}];
+  const PAIRS_MARQUES=[{a:"Nike",b:"Adidas"},{a:"Coca-Cola",b:"Pepsi"},{a:"Apple",b:"Samsung"}];
+  const PAIRS_INSOLITES=[{a:"brosse à dents",b:"peigne"},{a:"trombone",b:"agrafeuse"},{a:"tire-bouchon",b:"décapsuleur"}];
+  const PAIRS_JEUXVIDEO=[{a:"Mario",b:"Sonic"},{a:"Fortnite",b:"PUBG"},{a:"PlayStation",b:"Xbox"},{a:"Zelda",b:"Elden Ring"},{a:"FIFA",b:"eFootball"}];
+  const FUNNY_FR=["ornithorynque","ouistiti","ptérodactyle","pamplemousse","cacahuète","schtroumpf","coccyx","glouglou","gargouillis","zigzag","zinzin","pataquès"];
+  const COMMON_FR=["chaussure","fromage","baguette","voiture","vélo","chaise","table","lampe","rideau","bouteille","télécommande","serpillière","poêle"];
+  const RANDOM_AGENT_NAMES = ["Spectre", "Vipère", "Corbeau", "Ombre", "Fantôme", "Loup", "Cobra", "Phénix", "Tigre", "Faucon", "Mirage", "Zodiac"];
+  const THEMES = {quotidien:PAIRS_QUOTIDIEN,jeuxvideo:PAIRS_JEUXVIDEO,animaux:PAIRS_ANIMAUX,metiers:PAIRS_METIERS,marques:PAIRS_MARQUES,insolites:PAIRS_INSOLITES,algerie:PAIRS_ALGERIE,cuisine:PAIRS_CUISINE,cinema:PAIRS_CINEMA,geo:PAIRS_GEO,culture:PAIRS_CULTURE,pop:PAIRS_POP,sports:PAIRS_SPORTS,musique:PAIRS_MUSIQUE};
+
+  // ---------- DOM & STATE ----------
+  const dom = {};
+  let setupAgentNames = [];
+  const state = {
+    players: [], wordPair: null,
+    settings: { theme: 'quotidien', playerCount: 4, botCount: 0, undercoverCount: 1, events: true, sound:false, innocent:false },
+    round: 1, distributionIndex: 0,
+    lastEliminated: null, lastVotes: {}, lastSuspect: null,
+    maxPlayers: 12, minPlayers: 3,
+    setupStep: 1,
+    _activeScreen: 'home', _gameController: null, _currentEvent: null
+  };
+
+  const getDOMElements = () => {
+    const ids = [
+      'screen-home', 'screen-setup', 'screen-pass', 'screen-game', 'screen-reveal', 'screen-end', 'screen-lastword', 'screen-event',
+      'themeSelect', 'undercoverCount', 'minus', 'plus', 'playerNum', 'minusBot', 'plusBot', 'botNum', 'playersSetup',
+      'btnReset', 'btnHelp', 'btnNewWord', 'btnShowMyCard', 'option-events', 'option-sound', 'option-innocent',
+      'currentName', 'revealCard', 'secretWord', 'start-game-btn', 'game-header',
+      'turn-display', 'game-content-area', 'lastword-prompt', 'lastword-grid',
+      'event-icon', 'event-title', 'event-description',
+      'revealPhoto', 'revealTitle', 'roleBadge', 'revealedWord', 'winnerBanner', 'summary', 'actionBar',
+      'vote-reveal-container', 'vote-reveal-details',
+      'modal-template', 'modal-title', 'modal-message', 'modal-input-wrap', 'modal-input', 'modal-actions'
+    ];
+    ids.forEach(id => dom[id.replace(/-(\w)/g, (m, g) => g.toUpperCase())] = document.getElementById(id));
+    dom.screens = {
+        home: dom.screenHome, setup: dom.screenSetup, pass: dom.screenPass, game: dom.screenGame,
+        reveal: dom.screenReveal, end: dom.screenEnd, lastword: dom.screenLastword, event: dom.screenEvent
+    };
+  };
+
+  // ---------- UTILS ----------
+  const rand = (n)=> Math.floor(Math.random()*n);
+  const shuffle = (arr)=> arr.map(v=>[Math.random(),v]).sort((a,b)=>a[0]-b[0]).map(x=>x[1]);
+  const byId = (id)=> state.players.find(p=>p.id===id);
+  const alive = ()=> state.players.filter(p=>p.alive);
+  const clamp = (n,min,max)=> Math.max(min, Math.min(max, n));
+  
+  function show(screenId, direction = 'forward'){ 
+    const currentScreen = dom.screens[state._activeScreen];
+    const nextScreen = dom.screens[screenId];
+
+    if (currentScreen && nextScreen && currentScreen !== nextScreen) {
+        currentScreen.classList.add(direction === 'forward' ? 'slide-out' : 'slide-in');
+        currentScreen.classList.remove('active');
+        
+        nextScreen.classList.add(direction === 'forward' ? 'slide-in' : 'slide-out');
+        nextScreen.classList.add('active');
+        
+        setTimeout(() => {
+            currentScreen.classList.remove('slide-out', 'slide-in');
+            nextScreen.classList.remove('slide-out', 'slide-in');
+        }, 300);
+    } else if (nextScreen) {
+        Object.values(dom.screens).forEach(s => s.classList.remove('active'));
+        nextScreen.classList.add('active');
+    }
+    
+    state._activeScreen = screenId;
+    dom.gameHeader.style.display = screenId === 'home' ? 'none' : 'block';
+    updateActionBar(screenId);
+    const inGame = ['pass', 'game', 'reveal', 'lastword', 'event'].includes(screenId);
+    dom.btnNewWord.style.display = inGame ? 'inline-flex' : 'none';
+    dom.btnShowMyCard.style.display = inGame ? 'inline-flex' : 'none';
+  }
+
+  // ---------- MODAL SYSTEM ----------
+  const showModal = (config) => {
+    dom.modalTitle.textContent = config.title;
+    dom.modalMessage.innerHTML = config.message;
+    dom.modalInputWrap.style.display = config.input ? 'block' : 'none';
+    if (config.input) {
+        dom.modalInput.placeholder = config.input.placeholder || '';
+        dom.modalInput.value = '';
+        setTimeout(() => dom.modalInput.focus(), 100);
+    }
+    dom.modalActions.innerHTML = '';
+    if (config.buttons && config.buttons.length > 0) {
+        config.buttons.forEach(btnConfig => {
+            const button = document.createElement('button');
+            button.className = `btn ${btnConfig.class || ''}`;
+            button.textContent = btnConfig.text;
+            button.style.flex = 1;
+            button.onclick = () => {
+                const inputValue = config.input ? dom.modalInput.value : null;
+                if (btnConfig.onClick) btnConfig.onClick(inputValue);
+                if (!config.preventClose) dom.modalTemplate.close();
+            };
+            dom.modalActions.appendChild(button);
+        });
+    }
+    if (dom.modalTemplate.open) dom.modalTemplate.close();
+    dom.modalTemplate.showModal();
+  };
+
+  // ---------- AUDIO & HAPTICS ----------
+  let audioCtx = null;
+  function initAudio(){ if(!audioCtx){ const Ctx = window.AudioContext || window.webkitAudioContext; if(Ctx){ audioCtx = new Ctx(); } } if(audioCtx && audioCtx.state==='suspended'){ audioCtx.resume(); } }
+  function beep(type='sine', freq=880, dur=0.1, vol=0.1){
+    if(!state.settings.sound || !audioCtx) return;
+    const t0 = audioCtx.currentTime;
+    const o = audioCtx.createOscillator(); const g = audioCtx.createGain();
+    o.type=type; o.frequency.setValueAtTime(freq, t0);
+    g.gain.setValueAtTime(0.0001, t0); g.gain.exponentialRampToValueAtTime(vol, t0 + 0.01);
+    g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+    o.connect(g); g.connect(audioCtx.destination);
+    o.start(t0); o.stop(t0 + dur);
+  }
+  function haptic(type = 'light') {
+    if (navigator.vibrate) {
+        navigator.vibrate(type === 'heavy' ? [50] : [20]);
+    }
+  }
+  const sounds = {
+    click: ()=> { beep('sine', 1200, 0.06); },
+    flip: ()=> { beep('sine', 900, 0.08); haptic('light'); },
+    start: ()=> { beep('sine', 740, 0.1); haptic('heavy'); },
+    eliminate: ()=> { beep('sawtooth', 420, 0.15, 0.08); haptic('heavy'); },
+    win: ()=> { beep('sine', 740, 0.1); setTimeout(()=>beep('sine', 880, 0.1),120); setTimeout(()=>beep('sine', 1046, 0.1),250); },
+    lose: ()=> { beep('sine', 440, 0.1); setTimeout(()=>beep('sine', 330, 0.1),120); },
+    tick: (fast=false)=> { if (!fast) beep('sine', 1000, 0.05, 0.05); },
+    event: ()=> { beep('sawtooth', 1500, 0.05); setTimeout(()=>beep('sawtooth', 1800, 0.1), 80); }
+  };
+
+  // ---------- IMAGE & AVATAR ----------
+  function fileToDataURL(file, maxW=520, maxH=520){
+    return new Promise((resolve,reject)=>{
+      const fr = new FileReader();
+      fr.onload=()=>{ const img=new Image(); img.onload=()=>{ const r=Math.min(maxW/img.width,maxH/img.height,1),w=Math.round(img.width*r),h=Math.round(img.height*r); const c=document.createElement('canvas');c.width=w;c.height=h; c.getContext('2d').drawImage(img,0,0,w,h); resolve(c.toDataURL('image/jpeg',.9)); }; img.onerror=reject; img.src=fr.result; }; fr.onerror=reject; fr.readAsDataURL(file);
+    });
+  }
+  function avatarHTML(p){
+    if(p?.photo) return `<div class="avatar"><img src="${p.photo}" alt="photo ${p.name||'joueur'}"></div>`;
+    const init = (p?.name||'Joueur').split(' ').map(x=>x[0]).slice(0,2).join('').toUpperCase();
+    return `<div class="avatar">${init||'J'}</div>`;
+  }
+
+  // ---------- SETUP ----------
+  function showSetupStep(step) {
+    state.setupStep = clamp(step, 1, 3);
+    document.querySelectorAll('.setup-step').forEach(el => {
+        el.style.display = el.dataset.step == state.setupStep ? 'block' : 'none';
+    });
+    updateActionBar('setup');
+  }
+
+  function renderPlayerSetup(){
+    dom.playersSetup.innerHTML='';
+    const n = state.settings.playerCount;
+    for (let i=0;i<n;i++){
+      const p = state.players[i] || {id:i+1, name:'', photo:null};
+      const row = document.createElement('div');
+      row.className='player-row';
+      row.style.animation = `fadeInUp .5s ${i * 50}ms both`;
+      row.innerHTML = `
+        ${avatarHTML(p)}
+        <input type="text" placeholder="Nom de l'agent..." value="${p.name||''}" data-idx="${i}" style="flex:1">
+        <div class="camera-row" style="display:flex; gap: 0.25rem;">
+          <button class="icon-btn" data-random="${i}" title="Nom aléatoire"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 3h5v5"/><path d="M4 20L21 3"/><path d="M21 16v5h-5"/><path d="M15 15l6 6"/><path d="M4 4l5 5"/></svg></button>
+          <button class="icon-btn" data-idx="${i}" title="Prendre/importer une photo"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg></button>
+          <button class="icon-btn" data-remove="${i}" title="Supprimer la photo" style="${p.photo ? '' : 'display:none;'}"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>
+          <input type="file" accept="image/*" data-file="${i}" class="sr-only">
+        </div>`;
+      dom.playersSetup.appendChild(row);
+    }
+    dom.playersSetup.querySelectorAll('input[type="text"]').forEach(inp=>inp.oninput=(e)=>{ const i=parseInt(e.target.dataset.idx,10); state.players[i]=state.players[i]||{id:i+1}; state.players[i].name=e.target.value; });
+    dom.playersSetup.querySelectorAll('button[data-random]').forEach(btn=>btn.onclick=()=>{ const i=parseInt(btn.dataset.random,10); if(setupAgentNames.length === 0) setupAgentNames = shuffle([...RANDOM_AGENT_NAMES]); const newName = setupAgentNames.pop(); if(state.players[i]) { state.players[i].name = newName; } else { state.players[i] = {id:i+1, name: newName, photo: null}; } renderPlayerSetup(); });
+    dom.playersSetup.querySelectorAll('button[data-idx]').forEach(btn=>btn.onclick=()=>{ const i=parseInt(btn.dataset.idx,10); dom.playersSetup.querySelector(`input[data-file="${i}"]`)?.click(); });
+    dom.playersSetup.querySelectorAll('button[data-remove]').forEach(btn=>btn.onclick=()=>{ const i=parseInt(btn.dataset.remove,10); if(state.players[i])state.players[i].photo=null; renderPlayerSetup(); });
+    dom.playersSetup.querySelectorAll('input[data-file]').forEach(inp=>inp.onchange=async(e)=>{ const i=parseInt(e.target.dataset.file,10); const file=e.target.files?.[0]; if(!file)return; try{const d=await fileToDataURL(file);(state.players[i]||={id:i+1}).photo=d;renderPlayerSetup();}catch{showModal({title:"Erreur",message:"Impossible de charger la photo.",buttons:[{text:"OK"}]})}});
+  }
+
+  function initSetup(){
+    state.setupStep = 1;
+    showSetupStep(1);
+    setupAgentNames = shuffle([...RANDOM_AGENT_NAMES]);
+    
+    // Load saved players
+    const savedPlayers = JSON.parse(localStorage.getItem('undercoverPlayers') || '[]');
+    state.settings.playerCount = savedPlayers.length > 0 ? savedPlayers.length : 4;
+    state.players = savedPlayers.length > 0 ? savedPlayers : Array.from({length:4}, (_,i)=>({id:i+1, name:'', photo:null}));
+
+    dom.playerNum.textContent = state.settings.playerCount;
+    dom.botNum.textContent = state.settings.botCount;
+    renderPlayerSetup();
+    
+    const updateOptionCards = () => {
+        ['events', 'sound', 'innocent'].forEach(key => {
+            const el = dom[`option${key.charAt(0).toUpperCase() + key.slice(1)}`];
+            el.classList.toggle('active', state.settings[key]);
+            el.querySelector('.value').textContent = state.settings[key] ? 'Activé' : 'Désactivé';
+        });
+    };
+    updateOptionCards();
+
+    const updateTotalPlayerCount = () => {
+        const total = state.settings.playerCount + state.settings.botCount;
+        if (total > state.maxPlayers) {
+            state.settings.playerCount = state.maxPlayers - state.settings.botCount;
+        }
+        dom.playerNum.textContent = state.settings.playerCount;
+        dom.botNum.textContent = state.settings.botCount;
+        
+        const currentCount = state.players.length;
+        if (state.settings.playerCount > currentCount) {
+            for(let i = currentCount; i < state.settings.playerCount; i++) {
+                state.players.push({id: i + 1, name: '', photo: null});
+            }
+        } else if (state.settings.playerCount < currentCount) {
+            state.players.splice(state.settings.playerCount);
+        }
+        renderPlayerSetup();
+    };
+
+    dom.minus.onclick = ()=>{ state.settings.playerCount = clamp(state.settings.playerCount - 1, 0, state.maxPlayers); updateTotalPlayerCount(); };
+    dom.plus.onclick  = ()=>{ state.settings.playerCount = clamp(state.settings.playerCount + 1, 0, state.maxPlayers); updateTotalPlayerCount(); };
+    dom.minusBot.onclick = ()=>{ state.settings.botCount = clamp(state.settings.botCount - 1, 0, state.maxPlayers); updateTotalPlayerCount(); };
+    dom.plusBot.onclick  = ()=>{ state.settings.botCount = clamp(state.settings.botCount + 1, 0, state.maxPlayers); updateTotalPlayerCount(); };
+
+    dom.themeSelect.onchange = (e)=> state.settings.theme = e.target.value;
+    ['events', 'sound', 'innocent'].forEach(key => {
+        dom[`option${key.charAt(0).toUpperCase() + key.slice(1)}`].onclick = () => {
+            state.settings[key] = !state.settings[key];
+            if(key==='sound' && state.settings.sound) { initAudio(); sounds.click(); }
+            updateOptionCards();
+        };
+    });
+  }
+
+  // ---------- GAME FLOW ----------
+  function startGame(isNewWord = false){
+    const { playerCount, botCount, undercoverCount, innocent } = state.settings;
+    const n = playerCount + botCount;
+    if (n < state.minPlayers) { showModal({title:"Pas assez de joueurs", message:`Il faut au moins ${state.minPlayers} agents au total (humains + bots).`, buttons:[{text:"OK"}]}); return; }
+    
+    const U = (n < 4) ? 1 : undercoverCount;
+    const I = (n < 3) ? 0 : (innocent ? 1 : 0);
+    const civils = n - U - I;
+
+    if (civils < 1){ showModal({title:"Configuration invalide", message:"Configuration de rôles impossible. Essayez avec plus de joueurs ou moins d'Undercovers.", buttons:[{text:"OK"}]}); return; }
+    
+    sounds.start();
+    state.round = 1; state.distributionIndex = 0; state.lastSuspect = null; state._currentEvent = null;
+
+    let theme = state.settings.theme;
+    if (theme === 'random') {
+        const themeKeys = Object.keys(THEMES);
+        theme = themeKeys[rand(themeKeys.length)];
+    }
+    let list = THEMES[theme] || PAIRS_QUOTIDIEN;
+    if (theme === 'drole') {
+        const a = COMMON_FR[rand(COMMON_FR.length)]; let b = FUNNY_FR[rand(FUNNY_FR.length)];
+        while (a.toLowerCase() === b.toLowerCase()) b = FUNNY_FR[rand(FUNNY_FR.length)];
+        state.wordPair = {a, b};
+    } else { state.wordPair = list[rand(list.length)]; }
+
+    const oldPlayers = isNewWord ? state.players.filter(p => !p.isBot) : [];
+    const humanPlayersToSave = [];
+    state.players = [];
+    const botNames = shuffle(["Alpha", "Bravo", "Charlie", "Delta", "Echo", "Foxtrot", "Golf", "Hotel", "India", "Juliett", "Kilo", "Lima"]);
+    if (setupAgentNames.length < playerCount) setupAgentNames = shuffle([...RANDOM_AGENT_NAMES]);
+    
+    for(let i=0; i<playerCount; i++) {
+        const existingPlayer = isNewWord && oldPlayers[i] ? oldPlayers[i] : (state.players[i] || {});
+        const name = (document.querySelector(`#playersSetup input[data-idx="${i}"]`)?.value || '').trim() || existingPlayer.name || setupAgentNames.pop() || `Agent ${i+1}`;
+        const photo = existingPlayer?.photo || null;
+        state.players.push({ id: i+1, name, photo, isBot: false, alive: true });
+        humanPlayersToSave.push({id: i+1, name, photo});
+    }
+    localStorage.setItem('undercoverPlayers', JSON.stringify(humanPlayersToSave));
+
+    for(let i=0; i<botCount; i++) {
+        state.players.push({ id: playerCount + i + 1, name: `Bot ${botNames[i]}`, photo: null, isBot: true, alive: true });
+    }
+
+    const p_ids = shuffle(state.players.map(p=>p.id));
+    for(let i=0; i<U; i++){ const p = byId(p_ids[i]); p.role='undercover'; p.word=state.wordPair.b; }
+    if(I === 1 && p_ids.length > U){ const p = byId(p_ids[U]); p.role='innocent'; p.word = "???"; }
+    state.players.forEach(p => {
+        if (!p.role) { p.role = 'civil'; p.word = state.wordPair.a; }
+    });
+
+    state._gameController = new GameController();
+    
+    if (playerCount > 0) {
+        show('pass');
+        renderRevealCard();
+    } else { 
+        state._gameController.startRound();
+    }
+  }
+
+  function renderRevealCard(){
+    dom.revealCard.classList.remove('flipped');
+    const player = state.players.filter(p => !p.isBot)[state.distributionIndex];
+    if (!player) return;
+    dom.currentName.textContent = player.name;
+    dom.secretWord.textContent = player.role === 'innocent' ? 'Vous êtes l\'Innocent' : (player.word || "—");
+  }
+  
+  function nextPlayerReveal() {
+      if (dom.revealCard.classList.contains('flipped')) {
+          showModal({title: "Cachez votre mot !", message: "Retournez la carte avant de passer au joueur suivant.", buttons:[{text:"OK"}]});
+          return;
+      }
+      sounds.click();
+      
+      const humanPlayers = state.players.filter(p => !p.isBot);
+      const isLastPlayer = state.distributionIndex >= humanPlayers.length - 1;
+
+      dom.revealCard.style.transition = 'transform .3s ease-in, opacity .3s ease-in';
+      dom.revealCard.style.transform = 'translateX(150%)';
+      dom.revealCard.style.opacity = '0';
+      
+      setTimeout(() => {
+          if (isLastPlayer) {
+              showModal({ title: "Mission activée !", message: "Tous les agents ont reçu leurs instructions. La phase de jeu commence.", buttons: [] });
+              setTimeout(() => {
+                  if (dom.modalTemplate.open) dom.modalTemplate.close();
+                  state._gameController.startRound();
+              }, 2000);
+          } else {
+              state.distributionIndex++;
+              renderRevealCard();
+              dom.revealCard.style.transition = 'none'; 
+              dom.revealCard.style.transform = 'translateX(-150%)';
+              void dom.revealCard.offsetWidth;
+              dom.revealCard.style.transition = 'transform .3s ease-out, opacity .3s ease-out';
+              dom.revealCard.style.transform = 'translateX(0)';
+              dom.revealCard.style.opacity = '1';
+              setTimeout(() => {
+                  dom.revealCard.style.transition = '';
+                  dom.revealCard.style.transform = '';
+                  dom.revealCard.style.opacity = '';
+              }, 300);
+          }
+      }, 300);
+  }
+  
+  function eliminate(player){
+    sounds.eliminate();
+    player.alive = false; 
+    state.lastEliminated = player;
+    dom.revealTitle.textContent = `${player.name} est éliminé·e`;
+    dom.revealPhoto.innerHTML = avatarHTML(player);
+    let roleText = 'Rôle : Civil';
+    if(player.role === 'undercover') roleText = 'Rôle : Undercover';
+    if(player.role === 'innocent') roleText = 'Rôle : Innocent';
+    dom.roleBadge.textContent = roleText;
+    dom.revealedWord.innerHTML = player.word && player.role !== 'innocent' ? `Mot : <b>${player.word}</b>` : 'Ce joueur n\'avait pas de mot.';
+    
+    show('reveal');
+  }
+
+  function handlePostElimination() {
+    const player = state.lastEliminated;
+    if (player.role === 'innocent') {
+        showModal({
+            title: "L'Innocent a été découvert !", message: "Pour gagner, vous devez deviner le mot des <b>Civils</b>.",
+            input: { placeholder: "Quel était le mot des Civils ?" },
+            buttons: [{ text: "Valider", class: "warn", onClick: (guess) => {
+                if(guess && guess.trim().toLowerCase() === state.wordPair.a.toLowerCase()) { endGame('innocent'); } 
+                else { showModal({title:"Mauvaise réponse !", message:`Le mot des civils était "<b>${state.wordPair.a}</b>". La partie continue.`, buttons:[{text:"OK", onClick: checkVictory }]}); }
+            }}]
+        });
+    } else {
+        showLastWordScreen();
+    }
+  }
+
+  function showLastWordScreen() {
+    const player = state.lastEliminated;
+    dom.lastwordPrompt.innerHTML = `<b>${player.name}</b>, avant de partir, désignez un joueur que vous trouvez suspect.`;
+    const grid = dom.lastwordGrid;
+    grid.innerHTML = '';
+    alive().forEach(p => {
+        const card = document.createElement('div');
+        card.className = 'player-vote-card';
+        card.innerHTML = `${avatarHTML(p)}<div class="name">${p.name}</div>`;
+        card.onclick = () => {
+            state.lastSuspect = p.id;
+            sounds.click();
+            checkVictory();
+        };
+        grid.appendChild(card);
+    });
+    show('lastword');
+  }
+
+  function checkVictory(){
+    if (state._activeScreen === 'end') return;
+    const u = alive().filter(p => p.role === 'undercover').length;
+    const c = alive().filter(p => p.role === 'civil').length;
+    const i = alive().filter(p => p.role === 'innocent').length;
+    const others = c + i;
+    
+    if(u === 0){ endGame('civils'); return; }
+    if(u >= others){ endGame('undercover'); return; }
+    if (alive().length <= 2 && u > 0) { endGame('undercover'); return; }
+    
+    if (['reveal', 'lastword'].includes(state._activeScreen)) {
+        actions.reveal[0].action();
+    }
+  }
+
+  function endGame(winner){
+    let banner = '', detail='';
+    if(winner==='civils'){ banner='Victoire des Civils !'; detail='Les Undercover ont été démasqués.'; sounds.win(); }
+    else if(winner==='innocent'){ banner='Victoire de l\'Innocent !'; detail='Il a deviné le mot des civils !'; sounds.win(); }
+    else { banner='Victoire des Undercover !'; detail='Ils ont atteint la parité ou sont les derniers en lice.'; sounds.lose(); }
+    
+    dom.winnerBanner.innerHTML = banner;
+    const civils = state.players.filter(p=>p.role==='civil').map(p=>p.name).join(', ');
+    const undercovers = state.players.filter(p=>p.role==='undercover').map(p=>p.name).join(', ');
+    const innocent = state.players.find(p=>p.role==='innocent');
+    
+    let summaryHtml = `${detail}<br><br><b>Civils (${state.wordPair.a})</b>: ${civils || 'aucun'}<br><b>Undercover (${state.wordPair.b})</b>: ${undercovers || 'aucun'}`;
+    if (innocent) summaryHtml += `<br><b>Innocent</b>: ${innocent.name}`;
+
+    dom.summary.innerHTML = summaryHtml;
+    
+    if (Object.keys(state.lastVotes).length > 0) {
+        dom.voteRevealContainer.style.display = 'block';
+        let voteHtml = '';
+        for(const voterId in state.lastVotes) {
+            const voter = byId(parseInt(voterId));
+            const target = byId(state.lastVotes[voterId]);
+            if(voter && target) {
+                const isSuspect = state.lastSuspect === parseInt(voterId);
+                voteHtml += `
+                    <div class="vote-reveal-grid">
+                        <div class="vote-reveal-item"><div class="avatar">${avatarHTML(voter)}</div><div class="name">${voter.name}</div></div>
+                        <div class="vote-arrow ${isSuspect ? 'suspect' : ''}">→</div>
+                        <div class="vote-reveal-item"><div class="avatar">${avatarHTML(target)}</div><div class="name">${target.name}</div></div>
+                    </div>
+                `;
+            }
+        }
+        dom.voteRevealDetails.innerHTML = voteHtml;
+    } else {
+        dom.voteRevealContainer.style.display = 'none';
+    }
+
+    show('end');
+  }
+  
+  // ---------- ACTION BAR & NAVIGATION ----------
+  const actions = {
+    pass: [{ text: 'Agent suivant →', action: nextPlayerReveal }],
+    event: [{ text: 'Compris !', action: () => state._gameController.continueFromEvent() }],
+    reveal: [{ text: 'Continuer', action: () => { 
+        if(state._activeScreen === 'reveal') {
+            handlePostElimination();
+        } else {
+            if(state._activeScreen !== 'end') { 
+                state.round++; 
+                if(state._gameController) state._gameController.startRound(); 
+            }
+        }
+    }}],
+    end: [{ text: 'Menu principal', class: 'ghost', flex: 1, action: () => { initSetup(); show('home'); } }, { text: 'Rejouer', class: '', flex: 2, action: () => { state.players.forEach(p=>{ p.alive=true; }); startGame(true); }}]
+  };
+
+  function updateActionBar(screenId) {
+      const bar = dom.actionBar;
+      bar.innerHTML = '';
+      
+      if (screenId === 'setup') {
+          bar.classList.add('visible');
+          if (state.setupStep > 1) {
+              const backBtn = document.createElement('button');
+              backBtn.className = 'btn ghost';
+              backBtn.textContent = '← Précédent';
+              backBtn.onclick = () => showSetupStep(state.setupStep - 1);
+              bar.appendChild(backBtn);
+          }
+          const nextBtn = document.createElement('button');
+          nextBtn.className = 'btn';
+          if (state.setupStep < 3) {
+              nextBtn.textContent = 'Suivant →';
+              nextBtn.onclick = () => showSetupStep(state.setupStep + 1);
+          } else {
+              nextBtn.textContent = 'Lancer la mission';
+              nextBtn.onclick = () => startGame(false);
+          }
+          bar.appendChild(nextBtn);
+          return;
+      }
+
+      const screenActions = actions[screenId];
+      if (screenActions) {
+          screenActions.forEach(config => {
+              const button = document.createElement('button');
+              button.className = `btn ${config.class || ''}`;
+              button.textContent = config.text;
+              if (config.flex) button.style.flex = config.flex;
+              button.onclick = config.action;
+              bar.appendChild(button);
+          });
+          bar.classList.add('visible');
+      } else { bar.classList.remove('visible'); }
+  }
+  
+  // ---------- RANDOM EVENTS ----------
+  const randomEvents = [
+    {
+      id: 'doubleVote', title: 'Vote Double', icon: '🗳️🗳️',
+      description: (p) => `<b>${p.name}</b>, votre vote comptera double lors de la prochaine élimination !`,
+      effect: (p) => { p.doubleVote = true; }
+    },
+    {
+      id: 'silence', title: 'Silence Radio', icon: '🤫',
+      description: (p) => `<b>${p.name}</b>, vous n'avez pas le droit de parler jusqu'au prochain tour. Donnez votre indice en mimant !`,
+      effect: (p) => { p.silenced = true; }
+    },
+    {
+      id: 'wordSwap', title: 'Échange de Mots', icon: '🔄',
+      description: (p1, p2) => `Les mots de <b>${p1.name}</b> et <b>${p2.name}</b> ont été échangés secrètement !`,
+      effect: (p1, p2) => { [p1.word, p2.word] = [p2.word, p1.word]; [p1.role, p2.role] = [p2.role, p1.role]; }
+    },
+    {
+      id: 'publicHint', title: 'Indice Public', icon: '📢',
+      description: (p) => `<b>${p.name}</b> doit révéler son indice à voix haute immédiatement !`,
+      effect: (p) => { p.mustRevealHintNow = true; }
+    },
+    {
+      id: 'truth', title: 'Sérum de vérité', icon: '💧',
+      description: (p) => `<b>${p.name}</b>, votre prochain indice doit obligatoirement être la vérité la plus pure sur votre mot.`,
+      effect: (p) => { p.mustTellTruth = true; }
+    }
+  ];
+
+  function triggerRandomEvent() {
+    if (!state.settings.events || Math.random() > 0.4) { // 40% chance of an event
+        state._gameController.continueFromEvent();
+        return;
+    }
+
+    const event = randomEvents[rand(randomEvents.length)];
+    state._currentEvent = event;
+    const players = shuffle(alive());
+    
+    dom.eventIcon.textContent = event.icon;
+    dom.eventTitle.textContent = event.title;
+    
+    if (event.id === 'wordSwap') {
+        const p1 = players[0], p2 = players[1];
+        event.effect(p1, p2);
+        dom.eventDescription.innerHTML = event.description(p1, p2);
+    } else {
+        const p1 = players[0];
+        event.effect(p1);
+        dom.eventDescription.innerHTML = event.description(p1);
+    }
+    
+    sounds.event();
+    show('event');
+  }
+
+  // ---------- GAME CONTROLLER CLASS ----------
+  class GameController {
+    constructor() {
+        this.turnOrder = [];
+        this.turnIndex = 0;
+        this.phase = 'hint';
+        this.timerId = null;
+        this.timeLeft = 0;
+        this.votes = {};
+        this.turnTimerDuration = 20; // seconds
+        this.voteTimerDuration = 30; // seconds
+    }
+
+    cleanup() {
+        if (this.timerId) clearInterval(this.timerId);
+        this.timerId = null;
+        dom.actionBar.innerHTML = '';
+        dom.actionBar.classList.remove('visible');
+    }
+
+    startRound() {
+        this.cleanup();
+        state.players.forEach(p => { p.votes = 0; p.hintGiven = false; p.doubleVote = false; p.silenced = false; p.mustRevealHintNow = false; p.mustTellTruth = false; });
+        this.votes = {};
+        this.turnOrder = shuffle(alive());
+        this.turnIndex = 0;
+        
+        triggerRandomEvent();
+    }
+    
+    continueFromEvent() {
+        this.phase = 'hint';
+        show('game');
+        this.nextTurn();
+    }
+    
+    nextTurn() {
+        if (this.timerId) clearInterval(this.timerId);
+        
+        const hintsGiven = this.turnOrder.filter(p => p.hintGiven).length;
+        if (hintsGiven >= this.turnOrder.length) {
+            this.startVotePhase();
+            return;
+        }
+        
+        // Find next player who hasn't given a hint
+        let currentPlayer = this.turnOrder[this.turnIndex];
+        while(currentPlayer.hintGiven) {
+            this.turnIndex = (this.turnIndex + 1) % this.turnOrder.length;
+            currentPlayer = this.turnOrder[this.turnIndex];
+        }
+
+        this.renderTurnDisplay(currentPlayer);
+        dom.gameContentArea.innerHTML = `<div class="center"><p class="hint">Donnez un indice sur votre mot...</p></div>`;
+
+        this.timeLeft = this.turnTimerDuration;
+        this.timerId = setInterval(() => this.updateTurnTimer(currentPlayer), 1000);
+        this.updateTurnTimer(currentPlayer);
+
+        const actionBar = dom.actionBar;
+        actionBar.innerHTML = '';
+        
+        if (currentPlayer.isBot) {
+            setTimeout(() => {
+                let hint = "Hmm...";
+                if (currentPlayer.word === state.wordPair.a) hint = "Civil";
+                else if (currentPlayer.word === state.wordPair.b) hint = "Undercover";
+                this.processHint(currentPlayer, hint);
+            }, rand(2000) + 1000);
+        } else {
+            const hintBtn = document.createElement('button');
+            hintBtn.className = 'btn';
+            hintBtn.textContent = "Donner l'indice";
+            
+            if (currentPlayer.mustRevealHintNow) {
+                hintBtn.textContent = "Révéler l'indice maintenant !";
+                hintBtn.classList.add('warn');
+            }
+            if (currentPlayer.silenced) {
+                hintBtn.textContent = "Mimer l'indice";
+            }
+
+            hintBtn.onclick = () => {
+                showModal({
+                    title: `Indice de ${currentPlayer.name}`, message: "Entrez votre indice (un seul mot).",
+                    input: { placeholder: "Votre indice..." },
+                    buttons: [
+                        { text: "Annuler", class: "ghost" },
+                        { text: "Valider", onClick: (hint) => { if (hint?.trim()) this.processHint(currentPlayer, hint.trim()); }}
+                    ]
+                });
+            };
+            actionBar.appendChild(hintBtn);
+            actionBar.classList.add('visible');
+        }
+    }
+
+    renderTurnDisplay(player) {
+        dom.turnDisplay.style.display = 'flex';
+        const circle = `<svg class="turn-timer-ring" viewBox="0 0 36 36"><circle class="turn-timer-circle" cx="18" cy="18" r="15.9155" stroke-dasharray="100, 100" stroke-dashoffset="100"></circle></svg>`;
+        dom.turnDisplay.innerHTML = `
+            <div class="turn-player-avatar">${avatarHTML(player)}</div>
+            <div class="turn-player-name">Tour ${state.round} : Au tour de <b>${player.name}</b></div>
+        `;
+    }
+
+    updateTurnTimer(player) {
+        if (this.timeLeft <= 0) {
+            clearInterval(this.timerId);
+            this.processHint(player, "..."); // Player ran out of time
+            return;
+        }
+
+        const progress = (this.timeLeft / this.turnTimerDuration) * 100;
+        const circle = dom.turnDisplay.querySelector('.turn-timer-circle');
+        if (circle) {
+            circle.style.strokeDashoffset = 100 - progress;
+            if (this.timeLeft <= 5) {
+                circle.style.stroke = 'var(--danger)';
+            } else {
+                circle.style.stroke = 'var(--accent)';
+            }
+        }
+        
+        this.timeLeft--;
+    }
+    
+    processHint(player, hint) {
+        if (this.timerId) clearInterval(this.timerId);
+        player.hintGiven = true;
+        dom.gameContentArea.innerHTML = `<p class="hint">${player.name} a donné l'indice :</p><div class="hint-text">"${hint}"</div>`;
+        dom.actionBar.innerHTML = '';
+        dom.actionBar.classList.remove('visible');
+        
+        this.turnIndex = (this.turnIndex + 1) % this.turnOrder.length;
+        
+        setTimeout(() => {
+            this.nextTurn();
+        }, 3000);
+    }
+
+    startVotePhase() {
+        this.cleanup();
+        this.phase = 'vote';
+        show('game');
+        dom.turnDisplay.style.display = 'none';
+        
+        this.timeLeft = this.voteTimerDuration;
+        dom.gameContentArea.innerHTML = `
+            <div style="text-align:center;">
+                <h2>Vote Final !</h2>
+                <p class="hint">Discutez et votez pour l'Undercover !</p>
+                <div class="vote-timer-display">${this.timeLeft}</div>
+            </div>
+            <div class="player-grid-vote"></div>
+        `;
+        this.renderVoteGrid();
+        this.timerId = setInterval(() => this.updateVoteTimer(), 1000);
+        
+        const actionBar = dom.actionBar;
+        actionBar.innerHTML = '';
+        const tallyBtn = document.createElement('button');
+        tallyBtn.className = 'btn';
+        tallyBtn.textContent = 'Terminer le vote';
+        tallyBtn.onclick = () => this.tallyVotes();
+        actionBar.appendChild(tallyBtn);
+        actionBar.classList.add('visible');
+    }
+
+    updateVoteTimer() {
+        if (this.timeLeft <= 0) {
+            clearInterval(this.timerId);
+            this.tallyVotes();
+            return;
+        }
+        this.timeLeft--;
+        const timerEl = dom.gameContentArea.querySelector('.vote-timer-display');
+        if (timerEl) timerEl.textContent = this.timeLeft;
+        sounds.tick(this.timeLeft <= 5);
+    }
+    
+    renderVoteGrid() {
+        const grid = dom.gameContentArea.querySelector('.player-grid-vote');
+        if (!grid) return;
+        grid.innerHTML = '';
+        alive().forEach(player => {
+            const card = document.createElement('div');
+            card.className = 'player-vote-card';
+            card.dataset.playerId = player.id;
+            
+            const voterIDs = Object.keys(this.votes).map(id => parseInt(id));
+            const humanVoters = alive().filter(p => !p.isBot).map(p => p.id);
+            const allHumansVoted = humanVoters.every(id => voterIDs.includes(id));
+
+            if (allHumansVoted) {
+                 card.classList.add('disabled');
+            } else {
+                 card.onclick = (e) => this.castVote(player, e.currentTarget);
+            }
+            
+            let voteCount = 0;
+            Object.values(this.votes).forEach(v => {
+                if (v.targetId === player.id) {
+                    voteCount += v.isDouble ? 2 : 1;
+                }
+            });
+            card.innerHTML = `${avatarHTML(player)}<div class="name">${player.name}</div><div class="votes-count" style="font-weight:bold;">${'🗳️'.repeat(voteCount)}</div>`;
+            grid.appendChild(card);
+        });
+    }
+
+    castVote(target, cardElement) {
+        const potentialVoters = alive().filter(p => !p.isBot && !this.votes[p.id]);
+        if (potentialVoters.length === 0) return;
+
+        let voterSelectionHTML = '';
+        potentialVoters.forEach(v => {
+            voterSelectionHTML += `<button class="btn ghost" data-voter-id="${v.id}" style="width:auto; flex-grow: 1;">${v.name}</button>`;
+        });
+
+        showModal({
+            title: `Qui vote pour ${target.name} ?`,
+            message: `<div class="row" style="justify-content: center; flex-wrap: wrap; gap: 0.5rem;">${voterSelectionHTML}</div>`,
+            buttons: []
+        });
+
+        document.querySelectorAll('[data-voter-id]').forEach(button => {
+            button.onclick = () => {
+                const voterId = parseInt(button.dataset.voterId, 10);
+                const voter = byId(voterId);
+                if (voter && !this.votes[voter.id]) {
+                    sounds.click();
+                    this.votes[voter.id] = { targetId: target.id, isDouble: !!voter.doubleVote };
+                    dom.modalTemplate.close();
+                    this.renderVoteGrid();
+                }
+            }
+        });
+    }
+
+    tallyVotes() {
+        if(this.timerId) clearInterval(this.timerId);
+        this.timerId = null;
+
+        alive().filter(p => p.isBot).forEach(bot => {
+            if(!this.votes[bot.id]) {
+                const targets = alive().filter(p => p.id !== bot.id);
+                if (targets.length > 0) this.votes[bot.id] = { targetId: targets[rand(targets.length)].id, isDouble: false };
+            }
+        });
+        
+        state.lastVotes = {...this.votes};
+
+        const voteCounts = {};
+        alive().forEach(p => voteCounts[p.id] = 0);
+        Object.values(this.votes).forEach(vote => {
+            if (voteCounts[vote.targetId] !== undefined) {
+                 voteCounts[vote.targetId] += vote.isDouble ? 2 : 1;
+            }
+        });
+
+        let maxVotes = -1;
+        Object.values(voteCounts).forEach(c => { if(c > maxVotes) maxVotes = c; });
+
+        if (maxVotes <= 0) {
+            showModal({ title: "Aucun vote", message: "Personne n'est éliminé ce tour.", buttons: [{ text: "Tour suivant", onClick: checkVictory }] });
+            return;
+        }
+
+        const mostVotedIds = Object.keys(voteCounts).filter(id => voteCounts[id] === maxVotes);
+
+        if (mostVotedIds.length !== 1) {
+            showModal({ title: "Égalité !", message: "Plusieurs joueurs ont reçu le même nombre de votes. Personne n'est éliminé.", buttons: [{ text: "Tour suivant", onClick: checkVictory }] });
+        } else {
+            const playerToEliminate = byId(parseInt(mostVotedIds[0], 10));
+            eliminate(playerToEliminate);
+        }
+    }
+  }
+
+  // ---------- INITIALIZATION ----------
+  function init() {
+    getDOMElements();
+    initSetup();
+    show('home');
+    
+    dom.startGameBtn.onclick = () => {
+        sounds.click();
+        show('setup');
+    };
+
+    dom.btnReset.onclick = () => showModal({ title: "Nouvelle partie ?", message: "Toute la progression sera perdue. Voulez-vous vraiment recommencer ?", buttons: [{ text: "Annuler", class: "ghost" }, { text: "Oui, recommencer", class: "danger", onClick: () => { initSetup(); show('home'); } }] });
+    dom.btnHelp.onclick = () => showModal({ title: "Règles du jeu", message: `<p>La majorité (<b>Civils</b>) reçoit le mot A, la minorité (<b>Undercover</b>) le mot B. Personne ne connaît son rôle au début. Donnez des indices, puis votez pour éliminer un joueur.</p><p><b>Événements</b> : Des événements aléatoires peuvent survenir et changer le cours du jeu !</p><p><b>L'Innocent</b> : Ce joueur n'a aucun mot. S'il est éliminé, il doit deviner le mot des Civils pour gagner seul.</p><p><b>Victoire</b> : Les Civils gagnent quand il n’y a plus d’Undercover. Les Undercover gagnent quand ils sont aussi nombreux ou plus que les autres. L'Innocent gagne s'il est éliminé et devine le mot des civils.</p>`, buttons: [{ text: "Compris !", class: "" }] });
+    dom.btnNewWord.onclick = () => showModal({ title: "Nouveau mot ?", message: "Voulez-vous vraiment relancer une manche avec un nouveau mot et les mêmes joueurs ?", buttons: [{ text: "Annuler", class: "ghost" }, { text: "Oui, relancer", class: "warn", onClick: () => startGame(true) }] });
+
+    dom.btnShowMyCard.onclick = () => {
+        let currentPlayer, context = '';
+        const gc = state._gameController;
+        if (state._activeScreen === 'pass') {
+            currentPlayer = state.players.filter(p => !p.isBot)[state.distributionIndex];
+            context = 'de recevoir votre carte';
+        } else if (gc && gc.phase === 'hint' && gc.turnOrder[gc.turnIndex]) {
+            const turnPlayer = gc.turnOrder[gc.turnIndex];
+            if (!turnPlayer.isBot) {
+                currentPlayer = turnPlayer;
+                context = 'de donner un indice';
+            }
+        }
+
+        if (currentPlayer) {
+            showModal({
+                title: "Confirmation",
+                message: `<b>${currentPlayer.name}</b>, est-ce bien votre tour ${context} ?`,
+                buttons: [
+                    { text: "Non", class: "ghost" },
+                    { text: "Oui, montrer ma carte", class: "", onClick: () => {
+                        showModal({
+                            title: `Votre carte, ${currentPlayer.name}`,
+                            message: `<div style="text-align:center;"><div class="word-big">${currentPlayer.role === 'innocent' ? 'Vous êtes l\'Innocent' : currentPlayer.word}</div><p style="margin-top:1rem;">Rôle: <b>${currentPlayer.role}</b></p></div>`,
+                            buttons: [{text: "Cacher"}]
+                        })
+                    }}
+                ]
+            });
+        } else {
+             showModal({ title: "Action impossible", message: "Vous ne pouvez voir une carte que pendant le tour d'un joueur humain.", buttons: [{text: "OK"}] });
+        }
+    };
+    
+    dom.revealCard.onclick = () => {
+        dom.revealCard.classList.toggle('flipped');
+        sounds.flip();
+    };
+  }
+
+  document.addEventListener('DOMContentLoaded', init);
+})();
+</script>
 </body>
 </html>
